@@ -108,9 +108,9 @@
             listen        80;
             listen        [::]:80;
 
-            server_name ws.supersecuredomain.com;
+            server_name midominio.com;
             
-            root /var/www/ws.juandmegon.com/public;
+            root /var/www/midominio_carpeta/public;
             
             index index.php;
 
@@ -147,3 +147,49 @@
 
     - Recargamos nginx:
         sudo systemctl reload nginx.service
+
+## Certificado de seguridad con Acme:
+
+    sudo acme.sh --issue -d midominio.com -w /var/www/midominio_carpeta/public/ --force
+
+    sudo mkdir /etc/nginx/midominio.com
+
+    sudo acme.hs -d midominio.com --install-cert --key-file /etc/nginx/certs/midominio.com/key.pem --fullchain-file /etc/nginx/certs/midominio.com/fullchain.pem --ca-file /etc/nginx/certs/midominio.com/ca.pem --realoadcmd "systemctl force-reload nginx.service" --force
+
+    - Verificar archivos creado : ll /etc/nginx/certs/midominio.com/
+
+    - Solo las conexiones pasadas por https seran obtenidas , las http iran a otro lado
+    sudo nano /etc/nginx/sites-available/midominio.com:
+        server {
+            ## listen        80;
+            ## listen        [::]:80;
+
+            listen      443 ssl;
+            listen        [::]:443 ssl;
+            
+            server_name midominio.com;
+            
+            root /var/www/midominio_carpeta/public;
+            
+            index index.php;
+
+            ssl_certificate /etc/nginx/certs/midominio.com/fullchain.pem;
+            ssl_certificate_key /etc/nginx/certs/midominio.com/key.pem;
+
+            location / {
+                try_files $uri $uri/ /index.php?$query_string;
+            }
+
+            .
+            .
+            .
+        }
+    
+    - Test
+        sudo nginx -t
+
+    - Recargamos nginx:
+        sudo systemctl reload nginx.service
+
+    - Ingresamos a laravel (redirecciona al nginx cuando entras con http):
+        https://midominio.com
